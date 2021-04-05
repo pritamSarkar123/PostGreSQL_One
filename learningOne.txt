@@ -1,0 +1,477 @@
+https://www.youtube.com/watch?v=qw--VYLpxG4
+
+help <- for getting help
+\q <- for quiting
+\? <- help with psql commands
+\h <- help with sql commands
+\l <- list of all databases
+\df <- all functions in db
+\d <- all relations in db
+\dt <- all tables in db
+\c <- to connect to db
+\i <- executing from a file
+\copy <- copy data to csv
+
+CREATE DATABSE test; //for creating the databse
+psql --help // returns all helps regarding to the postgres
+//connecting to db 1:-
+	psql -h localhost -p 5432 -U postgres test // for directly connicting to db localy // no ;
+	//wrong user :- role does not exhist
+	//wrong db:-  db doesnot exhist
+// connecting to db 2:-
+	psql -U postgres postgres
+	\c test
+// switching from one database to another:-
+        test=# \c newloanpredictordb
+        newloanpredictordb=#	
+// going back to actual outermost db
+        test=#\c postgres
+        postgres=#
+//deleting one database 
+	DROP DATABASE test; // no rollback possible -_- //keep back up
+//all datatypes:- https://www.postgresql.org/docs/9.5/datatype.html
+//creating databse
+\c test
+CREATE TABLE person(
+	id INT,
+	first_name VARCHAR(50),
+	last_name VARCHAR(50),
+	gender VARCHAR(7),
+	date_of_birth DATE
+);
+//checking list of relations
+\d
+//checking list of only tables
+\dt
+//describe a particular table(or relation)
+\d person
+
+//droping a table
+DROP TABLE person;
+//creating a new table with constraints
+// serial8 and bigserial same thing
+CREATE TABLE person(
+	id SERIAL8 NOT NULL PRIMARY KEY,
+	first_name VARCHAR(50) NOT NULL,
+	last_name VARCHAR(50) NOT NULL,
+	gender VARCHAR(7) NOT NULL,
+	date_of_birth DATE NOT NULL,
+	email VARCHAR(150));
+
+// inserting records in the table
+// can insert multiple records together
+1.
+INSERT INTO person(
+	first_name,
+	last_name,
+	gender,
+	date_of_birth)
+VALUES ('Pritam','Sarkar','MALE',DATE '1995-11-09');
+2.
+INSERT INTO person(
+	first_name,
+	last_name,
+	gender,
+	date_of_birth,
+	email)
+VALUES ('Eshani','Jas','FEMALE',DATE '1995-07-01','eshani@gmail.com');
+//showing all records forom the table
+SELECT * FROM person;
+
+// 1000 of records generation
+//https://www.mockaroo.com/
+// all "/ forward slash"
+//path:- F:/InterviewRelated/databases/PostGraySQL/person.sql
+//directly executing a file 
+//''<- must in windows otherwise permission denied
+\i 'F:/InterviewRelated/databases/PostGraySQL/person.sql'
+
+// select < - select columns
+// where < - filter rows based on condition
+
+SELECT FROM person; // select no field
+SELECT * FROM person; //select all resords from person
+
+//order by // works on number string dates etc
+SELECT * FROM person ORDER BY country_of_birth ASC,first_name DESC;
+
+SELECT * FROM person ORDER BY id,email;
+// q < to stop showing records
+
+
+// Distinct
+SELECT DISTINCT country_of_birth FROM person ORDER BY country_of_birth;
+
+//where
+SELECT * FROM person
+WHERE (country_of_birth='Brazil' OR country_of_birth='China') AND gender='Male'
+ORDER BY id,first_name,last_name;
+
+//comparison operator
+SELECT 1 = 1; //t
+SELECT 1 = 2; //f
+// <> =
+//Limit < - not a keyword og sql standard
+SELECT * FROM person LIMIT 10;
+//Offset << leaving 1st 5 then 10
+SELECT * FROM person OFFSET 5 LIMIT 10;
+//FETCH official way
+SELECT * FROM person OFFSET 5 FETCH FIRST 10 ROW ONLY;
+SELECT * FROM person OFFSET 5 FETCH FIRST ROW ONLY; // 1 row only
+//IN
+SELECT * FROM person WHERE country_of_birth IN ('China','France','Brazil');
+SELECT * FROM person WHERE country_of_birth IN ('China','France','Brazil') ORDER BY country_of_birth;
+//Between // start and end both inclusive
+SELECT * FROM person
+WHERE date_of_birth
+BETWEEN DATE '2016-01-01' AND DATE '2020-01-01';
+//LIKE operator (case sensitive)
+SELECT * FROM person
+WHERE email LIKE '%.com';
+// % (any no of char) <- wildcard
+// _ (one character)
+SELECT * FROM person WHERE email LIKE '%@google%';
+//ILIKE (case insensitive)
+SELECT DISTINCT country_of_birth AS country FROM person
+WHERE country_of_birth ILIKE 'p%';
+//Group by // count a function
+SELECT country_of_birth AS country,COUNT(1) AS persons FROM person
+GROUP BY country_of_birth
+ORDER BY COUNT(1),country_of_birth;
+//having <- works on group by
+SELECT country_of_birth AS country,COUNT(1) AS persons FROM person
+GROUP BY country_of_birth
+HAVING COUNT(1) BETWEEN 50 AND 200
+ORDER BY COUNT(1),country_of_birth;
+// aggrigate:- https://www.postgresql.org/docs/9.5/functions-aggregate.html
+
+
+\i 'F:/InterviewRelated/databases/PostGraySQL/car.sql'
+SELECT MAX(price) AS max , MIN(price) AS min , ROUND(AVG(price)) AS avg from car;
+
+// columns without group by in select will be aggrigated first
+SELECT make,model,MAX(price) AS max , MIN(price) AS min , ROUND(AVG(price)) AS avg,
+SUM(price) AS total
+FROM car
+GROUP BY make,model
+ORDER BY make,model
+LIMIT 20;
+//arithmatic
+SELECT 10*2 +12 as result;
+SELECT 5! as result;
+// || <- concat
+SELECT id,make ||'_'|| model as "make and model", ROUND(price * 0.10,2) AS "discount(10%)", price - ROUND(price * 0.10,2) AS now_price
+FROM car as new_table
+OFFSET 10 LIMIT 10 ;
+// COALESCE(num1,num2,......,num_n) <- grab the 1st present value
+SELECT COALESCE(email,'<--------Email not provided-------->') FROM person;
+// zero div error
+SELECT 10 / 0;
+// NULLIF(a,b)   // if a==b return null otherwise return a
+// so how can we handle zero div error?
+// number / null =null
+SELECT COALESCE(10 / NULLIF(5,0),0);
+SELECT COALESCE(10 / NULLIF(0,0),0); 
+//Timestamp //https://www.postgresql.org/docs/8.2/datatype-datetime.html
+SELECT NOW();
+//Date
+SELECT NOW()::DATE;
+//Time
+SELECT NOW()::TIME;
+SELECT NOW()::TIME WITH TIME ZONE;
+//** at date time datatype we can write :: TIMESTAMP // TIMESTAMP WITH TIME ZONE //DATE // TIME WITH TIME ZONE// TIME
+//Interval // useful when performing operation on date field
+//below functions return time stamps
+SELECT NOW() - INTERVAL '1 YEAR'; 
+SELECT NOW() - INTERVAL '10 YEARS';
+SELECT NOW()::DATE - INTERVAL '10 YEARS';
+SELECT NOW() - INTERVAL '10 MONTHS';
+SELECT NOW()::DATE - INTERVAL '10 MONTHS';
+SELECT NOW()::DATE + INTERVAL '10 MONTHS';
+SELECT (NOW()::DATE + INTERVAL '10 MONTHS')::DATE;
+//extracting particular field from timestamp
+SELECT EXTRACT(YEAR FROM NOW()); //DAY MONTH YEAR CENTURY DOW // day of the week
+//AGE
+SELECT id,first_name||' '||last_name AS name, AGE(NOW(),date_of_birth) AS age FROM person;
+
+SELECT id,first_name||' '||last_name AS name, 
+EXTRACT(YEAR FROM AGE(NOW(),date_of_birth))||' years '|| 
+EXTRACT(MONTH FROM AGE(NOW(),date_of_birth))||' months old'
+AS age FROM person LIMIT 10;
+
+
+
+// deleting from table
+DELETE FROM person WHERE gender NOT IN('Male','Female');
+
+//Primary key:
+ALTER TABLE car DROP CONSTRAINT car_pkey; //Drop the primary key
+
+ALTER TABLE car ADD PRIMARY KEY (id); // default name added here
+OR
+ALTER TABLE car ADD CONSTRAINT car_pkey PRIMARY KEY (id);// more than one col possible
+
+//Unique constraint
+ALTER TABLE person ADD CONSTRAINT unique_email UNIQUE (email); //can have more than one columns
+OR
+ALTER TABLE person ADD UNIQUE (email); //default constraint name added here
+
+ALTER TABLE person DROP CONSTRAINT unique_email;
+
+// Check
+ALTER TABLE person ADD CONSTRAINT only_male CHECK (gender='Male' OR gender='Female');
+ALTER TABLE person DROP CONSTRAINT only_male;
+// DElete
+
+DELETE FROM person; // each record delete one by one , can be rollbacked
+
+//Update // use where clause properly 
+
+UPDATE person SET email='pritam.sarkar@gmail.com' WHERE id=1;
+UPDATE person SET first_name='Pritam', last_name='Sarkar' WHERE email='pritam.sarkar@gmail.com';
+
+//ON CONFLICT DO NOTHING // only one conflict at a time
+// confict comes in primary key,unique key, not null, check case
+
+insert into person (id,first_name, last_name, email, gender, date_of_birth, country_of_birth) values (1,'Hermione', 'McEntagart', 'pritam.sarkar@gmail.com', 'Agender', '2018-07-04', 'Brazil') ON CONFLICT (id) DO NOTHING;
+
+
+//ON CONFLICT(id) DO UPDATE SET email= EXCLUDED.email // provided input email
+insert into person (id,first_name, last_name, email, gender, date_of_birth, country_of_birth) values (1,'Pritam', 'Sarkar', 'pritam.sarkar@gmail.com.in', 'Agender', '2018-07-04', 'Brazil') ON CONFLICT (id) DO UPDATE SET email=EXCLUDED.email;
+
+insert into person (id,first_name, last_name, email, gender, date_of_birth, country_of_birth) values (1,'Eshani', 'Jas', 'pritam.sarkar@gmail.com.in', 'Agender', '2018-07-04', 'Brazil') ON CONFLICT (id)
+DO UPDATE SET email=EXCLUDED.email,first_name=EXCLUDED.first_name,last_name=EXCLUDED.last_name;
+
+
+// foreign key 
+// ON DELETE :- DO NOTHING /.../  CASCADE /SET NULL/SET DEFAULT
+// ON UPDATE:-NO ACTION, CASCADE, SET NULL, or SET DEFAULT.
+
+
+create table car (
+	id BIGSERIAL NOT NULL PRIMARY KEY,
+	make VARCHAR(100) NOT NULL,
+	model VARCHAR(100) NOT NULL,
+	price NUMERIC(19,2) NOT NULL
+);
+create table person (
+	id BIGSERIAL NOT NULL PRIMARY KEY,
+	first_name VARCHAR(50) NOT NULL,
+	last_name VARCHAR(50) NOT NULL,
+	email VARCHAR(150) UNIQUE,
+	gender VARCHAR(50) NOT NULL,
+	date_of_birth DATE NOT NULL,
+	country_of_birth VARCHAR(50) NOT NULL,
+	car_id BIGINT REFERENCES car (id),
+	UNIQUE(car_id)
+);
+
+// \x <- for extended display on and off
+
+//Inner joins // based on foreign key
+// select from person and car joined table
+// we can use USING (car_id) when same field name in both of the tables
+
+SELECT * FROM 
+person AS p JOIN car AS c 
+ON c.id = p.car_id;
+
+//LEFT OUTER joins // based on foreign key
+// select from person and car joined table keep all record form left joined table
+// we can use USING (car_id) when same field name in both of the tables
+
+SELECT * FROM 
+person AS p LEFT JOIN car AS c 
+ON c.id = p.car_id;
+
+// c.* <- all car columns 
+
+SELECT * FROM 
+person AS p LEFT JOIN car AS c 
+ON c.id = p.car_id
+WHERE c.* IS NULL;
+
+SELECT p.* FROM 
+person AS p LEFT JOIN car AS c 
+ON c.id = p.car_id
+WHERE c.* IS NULL;
+
+
+//RIGHT OUTER joins // based on foreign key
+// select from person and car joined table keep all record form right joined table
+// we can use USING (car_id) when same field name in both of the tables
+SELECT * FROM 
+person AS p RIGHT JOIN car AS c 
+ON c.id = p.car_id;
+
+// p.* <- all person columns
+// we can use USING (car_id) when same field name in both of the tables
+SELECT * FROM 
+person AS p RIGHT JOIN car AS c 
+ON c.id = p.car_id
+WHERE p.* IS NULL;
+
+SELECT c.* FROM 
+person AS p RIGHT JOIN car AS c 
+ON c.id = p.car_id
+WHERE p.* IS NULL;
+
+
+// full outer join
+// we can use USING (car_id) when same field name in both of the tables
+SELECT * FROM 
+person AS p FULL OUTER JOIN car AS c 
+ON c.id = p.car_id;
+
+
+SELECT * FROM 
+person AS p FULL OUTER JOIN car AS c 
+ON c.id = p.car_id
+WHERE p.* IS NOT NULL AND c.* IS NOT NULL;
+
+// deletion in foreign key
+
+DELETE FROM car WHERE id =10;
+// ON DELETE CASCADE <- is a bad practice
+
+create table car (
+	id BIGSERIAL NOT NULL PRIMARY KEY,
+	make VARCHAR(100) NOT NULL,
+	model VARCHAR(100) NOT NULL,
+	price NUMERIC(19,2) NOT NULL
+);
+create table person (
+	id BIGSERIAL NOT NULL PRIMARY KEY,
+	first_name VARCHAR(50) NOT NULL,
+	last_name VARCHAR(50) NOT NULL,
+	email VARCHAR(150) UNIQUE,
+	gender VARCHAR(50) NOT NULL,
+	date_of_birth DATE NOT NULL,
+	country_of_birth VARCHAR(50) NOT NULL,
+	car_id BIGINT REFERENCES car (id) ON DELETE CASCADE,
+	UNIQUE(car_id)
+);
+
+// ON DELETE SET NULL;
+
+
+create table car (
+	id BIGSERIAL NOT NULL PRIMARY KEY,
+	make VARCHAR(100) NOT NULL,
+	model VARCHAR(100) NOT NULL,
+	price NUMERIC(19,2) NOT NULL
+);
+create table person (
+	id BIGSERIAL NOT NULL PRIMARY KEY,
+	first_name VARCHAR(50) NOT NULL,
+	last_name VARCHAR(50) NOT NULL,
+	email VARCHAR(150) UNIQUE,
+	gender VARCHAR(50) NOT NULL,
+	date_of_birth DATE NOT NULL,
+	country_of_birth VARCHAR(50) NOT NULL,
+	car_id BIGINT REFERENCES car (id) ON DELETE SET NULL,
+	UNIQUE(car_id)
+);
+
+
+// ON DELETE SET DEFAULT; <- problem when unique constraint
+
+create table car (
+	id BIGSERIAL NOT NULL PRIMARY KEY,
+	make VARCHAR(100) NOT NULL,
+	model VARCHAR(100) NOT NULL,
+	price NUMERIC(19,2) NOT NULL
+);
+create table person (
+	id BIGSERIAL NOT NULL PRIMARY KEY,
+	first_name VARCHAR(50) NOT NULL,
+	last_name VARCHAR(50) NOT NULL,
+	email VARCHAR(150) UNIQUE,
+	gender VARCHAR(50) NOT NULL,
+	date_of_birth DATE NOT NULL,
+	country_of_birth VARCHAR(50) NOT NULL,
+	car_id BIGINT REFERENCES car (id) ON DELETE SET DEFAULT,
+	UNIQUE(car_id)
+);
+
+//ERROR:  update or delete on table "car" violates foreign key constraint "person_car_id_fkey" on table "person"
+DETAIL:  Key (id)=(10) is still referenced from table "person".
+
+\i 'F:/InterviewRelated/databases/PostGraySQL/person_car.sql'
+
+// data to csv 
+
+\copy (SELECT * FROM person AS p FULL OUTER JOIN car AS c ON c.id=p.car_id) TO 'F:/InterviewRelated/databases/PostGraySQL/result1.csv' DELIMITER ',' CSV HEADER;
+
+
+// bigserial
+SELECT * FROM person_id_seq;
+SELECT * FROM car_id_seq;
+
+SELECT nextval('car_id_seq'::regclass); // 2 to 3 times
+SELECT * FROM car_id_seq;
+insert into person (first_name, last_name, email, gender, date_of_birth, country_of_birth,car_id) values ('Pritam', 'Sarkar', 'pritam@gmail.com', 'Male', '2020-09-13', 'Russia',2);
+// will get a updated sequence no
+
+SELECT nextval('person_id_seq'::regclass); // 2 to 3
+SELECT * FROM person_id_seq;
+
+
+// restatring sequrnce
+ALTER SEQUENCE person_id_seq RESTART WITH 100;
+ALTER SEQUENCE car_id_seq RESTART WITH 30;
+
+// Extensions <- functions
+
+SELECT * FROM pg_available_extensions;
+
+
+// uuid <- https://en.wikipedia.org/wiki/Universally_unique_identifier
+//uuid-ossp
+// 1st install the extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+SELECT * FROM pg_available_extensions; // for checsking the installed version
+
+\df <- list of database functions/ extensions
+Schema |        Name        | Result data type |    Argument data types    | Type
+--------+--------------------+------------------+---------------------------+------
+ public | uuid_generate_v1   | uuid             |                           | func
+ public | uuid_generate_v1mc | uuid             |                           | func
+ public | uuid_generate_v3   | uuid             | namespace uuid, name text | func
+ public | uuid_generate_v4   | uuid             |                           | func
+ public | uuid_generate_v5   | uuid             | namespace uuid, name text | func
+ public | uuid_nil           | uuid             |                           | func
+ public | uuid_ns_dns        | uuid             |                           | func
+ public | uuid_ns_oid        | uuid             |                           | func
+ public | uuid_ns_url        | uuid             |                           | func
+ public | uuid_ns_x500       | uuid             |                           | func
+
+ SELECT uuid_generate_v4(); // simply invocing the function // each time unique
+ // best for primary keys and passeord // we can migrate data with out any conflicts
+
+
+\i 'F:/InterviewRelated/databases/PostGraySQL/person_car_2.sql'
+
+// then update 2 or 3 records in person
+EG:- 
+test=# UPDATE person SET car_id='b38b4770-13ed-4096-8b5e-d10b763987cc' WHERE person_id='16047690-1ccc-4fc8-b481-a28f78be1b59';
+UPDATE 1
+test=# UPDATE person SET car_id='35173fa4-5ae9-4fb2-aa84-37d05c2f288d' WHERE person_id='bd5cc54a-6c61-45f5-8a60-6301cfc8817d';
+UPDATE 1
+test=# UPDATE person SET car_id='1c727221-c193-4e1b-b56f-a60198b26fb7' WHERE person_id='3b7585c8-b1db-4a88-ae0c-39baf61954b4';
+UPDATE 1
+
+//EG:- output 
+test=# select person_id,first_name||' '||last_name,car_id from person;
+              person_id               |      ?column?       |                car_id
+--------------------------------------+---------------------+--------------------------------------
+ b2331725-7c05-480f-a5d0-63dfc6ee587f | Amalie Mulder       |
+ e1738ae3-9b96-4c5b-96ab-c4854796bf91 | Linell Skett        |
+ 16047690-1ccc-4fc8-b481-a28f78be1b59 | Kiah Sexcey         | b38b4770-13ed-4096-8b5e-d10b763987cc
+ bd5cc54a-6c61-45f5-8a60-6301cfc8817d | Hermione McEntagart | 35173fa4-5ae9-4fb2-aa84-37d05c2f288d
+ 3b7585c8-b1db-4a88-ae0c-39baf61954b4 | Sayre Mewes         | 1c727221-c193-4e1b-b56f-a60198b26fb7
+
+ //inner JOIN
+ SELECT p.first_name||' '||p.last_name AS name, p.person_id ,p.car_id
+ FROM person AS p JOIN car AS c
+ USING (car_id);
