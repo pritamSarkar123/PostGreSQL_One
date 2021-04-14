@@ -475,3 +475,44 @@ test=# select person_id,first_name||' '||last_name,car_id from person;
  SELECT p.first_name||' '||p.last_name AS name, p.person_id ,p.car_id
  FROM person AS p JOIN car AS c
  USING (car_id);
+
+
+ // explain analyze to analyze the query planning and undergone proceesses in query
+
+ test=# explain analyze select * from car where car_id='b38b4770-13ed-4096-8b5e-d10b763987cc';
+                                                   QUERY PLAN
+----------------------------------------------------------------------------------------------------------------
+ Index Scan using car_pkey on car  (cost=0.14..8.16 rows=1 width=472) (actual time=0.015..0.016 rows=1 loops=1)
+   Index Cond: (car_id = 'b38b4770-13ed-4096-8b5e-d10b763987cc'::uuid)
+ Planning Time: 2.317 ms <-----------------// see the time
+ Execution Time: 0.095 ms <-----------------// see the time
+(4 rows)
+
+
+test=# explain analyze select * from car where car_id='b38b4770-13ed-4096-8b5e-d10b763987cc';
+                                                   QUERY PLAN
+----------------------------------------------------------------------------------------------------------------
+ Index Scan using car_pkey on car  (cost=0.14..8.16 rows=1 width=472) (actual time=0.019..0.020 rows=1 loops=1)
+   Index Cond: (car_id = 'b38b4770-13ed-4096-8b5e-d10b763987cc'::uuid)
+ Planning Time: 0.104 ms <-----------------// see the time
+ Execution Time: 0.041 ms <-----------------// see the time
+(4 rows)
+
+//if query performed on a indexed column -> it performs faster 
+// if query performed on indexed node as well as a non indexed node-> it took a little bit longer to fetch info using IO operation
+// when we perform second time the same query -> it tooke less amount of time due to caching
+// in query if we perform like operation then it will take a large amount of time due to excessive scanning 
+// when query is performed on non indexed column then postgres uses multithreading (2 threades) for parallel searching
+
+// Creating index
+
+CREATE INDEX car_make_model_index ON car(make,model); // using 2 columns for one index
+
+OR 
+
+CREATE INDEX car_make_model_index ON car(make); // making single column index
+
+// if a table has multiple index. during query , query planner will decide use of which idexing leads to less amount of time
+
+// Droping index
+DROP INDEX car_make_model_index;
