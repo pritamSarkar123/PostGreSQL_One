@@ -504,7 +504,7 @@ test=# explain analyze select * from car where car_id='b38b4770-13ed-4096-8b5e-d
 // in query if we perform like operation then it will take a large amount of time due to excessive scanning 
 // when query is performed on non indexed column then postgres uses multithreading (2 threades) for parallel searching
 
-// Creating index
+// Creating index // done based on b tree, b+ tree , bitmap etc
 
 CREATE INDEX car_make_model_index ON car(make,model); // using 2 columns for one index
 
